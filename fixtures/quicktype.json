@@ -1,0 +1,79 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Thing3",
+    "definitions": {
+        "End": {
+            "properties": {
+                "type": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
+        },
+        "OneOf": {
+            "properties": {
+                "required": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "title": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
+        },
+        "State": {
+            "properties": {
+                "$schema": {
+                    "type": "string"
+                },
+                "$ref": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
+        },
+        "Thing3": {
+            "properties": {
+                "properties": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "$ref": "#/definitions/Thing3Properties"
+                },
+                "additionalProperties": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "oneOf": {
+                    "items": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "$ref": "#/definitions/OneOf"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
+        },
+        "Thing3Properties": {
+            "properties": {
+                "On": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "$ref": "#/definitions/End"
+                },
+                "State": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "$ref": "#/definitions/State"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object"
+        }
+    }
+}

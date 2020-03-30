@@ -1,16 +1,21 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/alecthomas/jsonschema/fixtures/quicktype"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
 )
 
@@ -103,6 +108,62 @@ type ChildOneOf struct {
 	Child2 string      `json:"child2" jsonschema:"oneof_required=group2"`
 	Child3 interface{} `json:"child3" jsonschema:"oneof_required=group2,oneof_type=string;array"`
 	Child4 string      `json:"child4" jsonschema:"oneof_required=group1"`
+}
+
+type Thing3 struct {
+	On    Thing1 `jsonschema:"oneof_type=on"`
+	State Thing2 `jsonschema:"oneof_type=state"`
+}
+
+type Thing1 bool
+type Thing2 struct {
+	Start int
+	End   int
+}
+
+func TestThing3(t *testing.T) {
+	tests := []struct {
+		typ       interface{}
+		reflector *Reflector
+		fixture   string
+	}{
+		{&Thing3{}, &Reflector{RequiredFromJSONSchemaTags: true}, "fixtures/thing.json"},
+	}
+
+	for _, tt := range tests {
+		name := strings.TrimSuffix(filepath.Base(tt.fixture), ".json")
+		t.Run(name, func(t *testing.T) {
+
+			expectedSchema := tt.reflector.Reflect(tt.typ)
+
+			expectedJSON, _ := json.MarshalIndent(expectedSchema, "", "  ")
+
+			// Write file, because verbosity is awesome.
+			err := ioutil.WriteFile(tt.fixture, expectedJSON, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			quicktypeSchema := quicktype.Thing3{}
+			quicktyped := tt.reflector.Reflect(quicktypeSchema)
+
+			// Write file, because verbosity is awesome.
+			quicktypeJSON, _ := json.MarshalIndent(quicktyped, "", "    ")
+			err = ioutil.WriteFile(fmt.Sprintf("fixtures/%s_quicktype.json", name), quicktypeJSON, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Equal(expectedJSON, quicktypeJSON) {
+				t.Logf("\nours=%s\ntheirs=%s\nstruct=%s",
+					string(expectedJSON),
+					string(quicktypeJSON),
+					spew.Sdump(Thing3{}),
+				)
+				t.Error("quicktype != ours")
+			}
+		})
+	}
 }
 
 func TestSchemaGeneration(t *testing.T) {
