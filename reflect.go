@@ -346,7 +346,7 @@ func (t *Type) structKeywordsFromTags(f reflect.StructField, parentType *Type, p
 func (t *Type) genericKeywords(tags []string, parentType *Type, propertyName string) {
 	for _, tag := range tags {
 		nameValue := strings.Split(tag, "=")
-		if len(nameValue) == 2 {
+		if len(nameValue) == 2 && nameValue[1] != "" {
 			name, val := nameValue[0], nameValue[1]
 			switch name {
 			case "title":
@@ -392,6 +392,26 @@ func (t *Type) genericKeywords(tags []string, parentType *Type, propertyName str
 					f, _ := strconv.ParseFloat(val, 64)
 					t.Enum = append(t.Enum, f)
 				}
+			}
+		} else if len(nameValue) == 1 || len(nameValue) == 2 && nameValue[1] == "" {
+			// only name
+			name := nameValue[0]
+			switch name {
+			case "oneof":
+				if parentType.OneOf == nil {
+					parentType.OneOf = []*Type{}
+				}
+				parentType.OneOf = append(parentType.OneOf, t)
+			case "anyof":
+				if parentType.AnyOf == nil {
+					parentType.AnyOf = []*Type{}
+				}
+				parentType.AnyOf = append(parentType.AnyOf, t)
+			case "allof":
+				if parentType.AllOf == nil {
+					parentType.AllOf = []*Type{}
+				}
+				parentType.AllOf = append(parentType.AllOf, t)
 			}
 		}
 	}
