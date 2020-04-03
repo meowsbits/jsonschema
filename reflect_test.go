@@ -16,6 +16,7 @@ import (
 
 	"github.com/alecthomas/jsonschema/fixtures/quicktype"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/spec"
 	"github.com/stretchr/testify/require"
 )
 
@@ -220,4 +221,62 @@ func TestBaselineUnmarshal(t *testing.T) {
 	actualJSON, _ := json.MarshalIndent(actualSchema, "", "  ")
 
 	require.Equal(t, strings.Replace(string(expectedJSON), `\/`, "/", -1), string(actualJSON))
+}
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+ */
+
+type BlockHashT [20]byte
+
+type BlockNumber int64
+type BlockHash BlockHashT
+
+type BlockNumberOrHash struct {
+	BlockNumber *BlockNumber `json:"blockNumber,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockNumber"` // jsonschema:"oneof_type=number"
+	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
+}
+type BlockNumberOrHashParams struct {
+	BlockNumberOrHash BlockNumberOrHash `jsonschema:"bnoh"` // `jsonschema:"oneof_type=blockNumber;blockHash"`
+	Canonical         bool              `json:"canonical,omitempty"`
+}
+
+func TestOneOf(t *testing.T) {
+
+	rflctr := &Reflector{
+		AllowAdditionalProperties:  true, // noop
+		RequiredFromJSONSchemaTags: true,
+		ExpandedStruct:             true,
+		TypeMapper:                 nil,
+		IgnoredTypes:               nil,
+	}
+
+	raw := BlockNumberOrHashParams{}
+	sch := rflctr.Reflect(raw)
+	b, _ := json.MarshalIndent(sch, "", "  ")
+	fmt.Println(string(b))
+
+	fmt.Println("--------------------------------")
+
+	sch2 := &spec.Schema{}
+	json.Unmarshal(b, sch2)
+	err := spec.ExpandSchema(sch2, sch2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sch2.Definitions = nil
+	bb, _ := json.MarshalIndent(sch2, "", "  ")
+	fmt.Println(string(bb))
+
+
 }

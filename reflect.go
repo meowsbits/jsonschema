@@ -401,16 +401,20 @@ func (t *Type) genericKeywords(tags []string, parentType *Type, propertyName str
 				if parentType.OneOf == nil {
 					parentType.OneOf = []*Type{}
 				}
+				t.Title = propertyName
 				parentType.OneOf = append(parentType.OneOf, t)
+
 			case "anyof":
 				if parentType.AnyOf == nil {
 					parentType.AnyOf = []*Type{}
 				}
+				t.Title = propertyName
 				parentType.AnyOf = append(parentType.AnyOf, t)
 			case "allof":
 				if parentType.AllOf == nil {
 					parentType.AllOf = []*Type{}
 				}
+				t.Title = propertyName
 				parentType.AllOf = append(parentType.AllOf, t)
 			}
 		}
