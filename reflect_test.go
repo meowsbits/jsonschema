@@ -244,11 +244,13 @@ type BlockHash BlockHashT
 
 type BlockNumberOrHash struct {
 	BlockNumber *BlockNumber `json:"blockNumber,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockNumber"` // jsonschema:"oneof_type=number"
-	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
+	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"`   // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
 }
 type BlockNumberOrHashParams struct {
-	BlockNumberOrHash BlockNumberOrHash `jsonschema:"bnoh"` // `jsonschema:"oneof_type=blockNumber;blockHash"`
-	Canonical         bool              `json:"canonical,omitempty"`
+	//BlockNumberOrHash BlockNumberOrHash `jsonschema:"bnoh"` // `jsonschema:"oneof_type=blockNumber;blockHash"`
+	BlockNumber *BlockNumber `json:"blockNumber,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockNumber"` // jsonschema:"oneof_type=number"
+	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"`     // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
+	Canonical   bool         `json:"canonical,omitempty" jsonschema:"canonical,required=false"`
 }
 
 func TestOneOf(t *testing.T) {
@@ -277,6 +279,5 @@ func TestOneOf(t *testing.T) {
 	sch2.Definitions = nil
 	bb, _ := json.MarshalIndent(sch2, "", "  ")
 	fmt.Println(string(bb))
-
 
 }
