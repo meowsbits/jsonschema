@@ -1,16 +1,22 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/alecthomas/jsonschema/fixtures/quicktype"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/go-openapi/spec"
 	"github.com/stretchr/testify/require"
 )
 
@@ -105,6 +111,62 @@ type ChildOneOf struct {
 	Child4 string      `json:"child4" jsonschema:"oneof_required=group1"`
 }
 
+type Thing3 struct {
+	On    Thing1 `jsonschema:"oneof_type=on"`
+	State Thing2 `jsonschema:"oneof_type=state"`
+}
+
+type Thing1 bool
+type Thing2 struct {
+	Start int
+	End   int
+}
+
+func TestThing3(t *testing.T) {
+	tests := []struct {
+		typ       interface{}
+		reflector *Reflector
+		fixture   string
+	}{
+		{&Thing3{}, &Reflector{RequiredFromJSONSchemaTags: true}, "fixtures/thing.json"},
+	}
+
+	for _, tt := range tests {
+		name := strings.TrimSuffix(filepath.Base(tt.fixture), ".json")
+		t.Run(name, func(t *testing.T) {
+
+			expectedSchema := tt.reflector.Reflect(tt.typ)
+
+			expectedJSON, _ := json.MarshalIndent(expectedSchema, "", "  ")
+
+			// Write file, because verbosity is awesome.
+			err := ioutil.WriteFile(tt.fixture, expectedJSON, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			quicktypeSchema := quicktype.Thing3{}
+			quicktyped := tt.reflector.Reflect(quicktypeSchema)
+
+			// Write file, because verbosity is awesome.
+			quicktypeJSON, _ := json.MarshalIndent(quicktyped, "", "    ")
+			err = ioutil.WriteFile(fmt.Sprintf("fixtures/%s_quicktype.json", name), quicktypeJSON, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Equal(expectedJSON, quicktypeJSON) {
+				t.Logf("\nours=%s\ntheirs=%s\nstruct=%s",
+					string(expectedJSON),
+					string(quicktypeJSON),
+					spew.Sdump(Thing3{}),
+				)
+				t.Error("quicktype != ours")
+			}
+		})
+	}
+}
+
 func TestSchemaGeneration(t *testing.T) {
 	tests := []struct {
 		typ       interface{}
@@ -159,4 +221,63 @@ func TestBaselineUnmarshal(t *testing.T) {
 	actualJSON, _ := json.MarshalIndent(actualSchema, "", "  ")
 
 	require.Equal(t, strings.Replace(string(expectedJSON), `\/`, "/", -1), string(actualJSON))
+}
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+ */
+
+type BlockHashT [20]byte
+
+type BlockNumber int64
+type BlockHash BlockHashT
+
+type BlockNumberOrHash struct {
+	BlockNumber *BlockNumber `json:"blockNumber,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockNumber"` // jsonschema:"oneof_type=number"
+	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"`   // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
+}
+type BlockNumberOrHashParams struct {
+	//BlockNumberOrHash BlockNumberOrHash `jsonschema:"bnoh"` // `jsonschema:"oneof_type=blockNumber;blockHash"`
+	BlockNumber *BlockNumber `json:"blockNumber,omitempty" jsonschema:"oneof"` // jsonschema:"oneof_required=blockNumber"` // jsonschema:"oneof_type=number"
+	BlockHash   *BlockHash   `json:"blockHash,omitempty" jsonschema:"oneof"`     // jsonschema:"oneof_required=blockHash"`     // jsonschema:"oneof_type=hash"
+	Canonical   bool         `json:"canonical,omitempty" jsonschema:"canonical,required=false"`
+}
+
+func TestOneOf(t *testing.T) {
+
+	rflctr := &Reflector{
+		AllowAdditionalProperties:  true, // noop
+		RequiredFromJSONSchemaTags: true,
+		ExpandedStruct:             true,
+		TypeMapper:                 nil,
+		IgnoredTypes:               nil,
+	}
+
+	raw := BlockNumberOrHashParams{}
+	sch := rflctr.Reflect(raw)
+	b, _ := json.MarshalIndent(sch, "", "  ")
+	fmt.Println(string(b))
+
+	fmt.Println("--------------------------------")
+
+	sch2 := &spec.Schema{}
+	json.Unmarshal(b, sch2)
+	err := spec.ExpandSchema(sch2, sch2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sch2.Definitions = nil
+	bb, _ := json.MarshalIndent(sch2, "", "  ")
+	fmt.Println(string(bb))
+
 }

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$ref": "#/definitions/Thing3",
+  "definitions": {
+    "Thing2": {
+      "properties": {
+        "Start": {
+          "type": "integer"
+        },
+        "End": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Thing3": {
+      "properties": {
+        "On": {
+          "oneOf": [
+            {
+              "type": "on"
+            }
+          ]
+        },
+        "State": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "$ref": "#/definitions/Thing2",
+          "oneOf": [
+            {
+              "type": "state"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    }
+  }
+}
